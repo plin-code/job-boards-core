@@ -6,12 +6,13 @@ use GuzzleHttp\Psr7\HttpFactory;
 use PlinCode\JobBoards\Exceptions\InvalidResponseException;
 use PlinCode\JobBoards\Exceptions\TransportException;
 use PlinCode\JobBoards\Http\HttpClient;
-use PlinCode\JobBoards\Tests\Support\FakePsrClient;
-use PlinCode\JobBoards\Tests\Support\RecordingLogger;
-use PlinCode\JobBoards\Tests\Support\TimeoutAwareFakeClient;
+use PlinCode\JobBoards\Testing\FakePsrClient;
+use PlinCode\JobBoards\Testing\PlainPsrClient;
+use PlinCode\JobBoards\Testing\RecordingLogger;
 use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
 
-function http(FakePsrClient $fake, ?RecordingLogger $logger = null): HttpClient
+function http(ClientInterface $fake, ?RecordingLogger $logger = null): HttpClient
 {
     return new HttpClient($fake, new HttpFactory, $logger);
 }
@@ -170,15 +171,15 @@ it('carries no timeout by default', function (): void {
 });
 
 it('applies the timeout when the injected client advertises support for it', function (): void {
-    $fake = (new TimeoutAwareFakeClient)->respondWith(200, '{}');
+    $fake = (new FakePsrClient)->respondWith(200, '{}');
 
     http($fake)->withTimeout(15.0)->get('https://example.test/x');
 
-    expect($fake->appliedTimeout)->toBe(15.0);
+    expect($fake->appliedTimeouts)->toContain(15.0);
 });
 
 it('ignores the timeout when the injected client cannot honour it', function (): void {
-    $fake = (new FakePsrClient)->respondWith(200, '{}');
+    $fake = (new PlainPsrClient)->respondWith(200, '{}');
 
     $client = http($fake)->withTimeout(15.0);
 
@@ -196,14 +197,14 @@ it('returns a new instance from every with* method', function (): void {
 });
 
 it('supports the per-call timeouts a connector needs for fetch versus validate', function (): void {
-    $fake = (new TimeoutAwareFakeClient)->respondWith(200, '{}')->respondWith(200, '{}');
+    $fake = (new FakePsrClient)->respondWith(200, '{}')->respondWith(200, '{}');
     $client = http($fake)->withTimeout(30.0);
 
     $client->get('https://example.test/jobs');
-    expect($fake->appliedTimeout)->toBe(30.0);
+    expect($fake->appliedTimeouts)->toContain(30.0);
 
     $client->withTimeout(15.0)->get('https://example.test/jobs');
-    expect($fake->appliedTimeout)->toBe(15.0);
+    expect($fake->appliedTimeouts)->toContain(15.0);
 });
 
 it('drives a paginated board the way a connector would', function (): void {

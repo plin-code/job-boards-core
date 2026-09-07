@@ -59,5 +59,8 @@
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "suggest": {
+        "guzzlehttp/guzzle": "To use PlinCode\\JobBoards\\Http\\GuzzleTimeoutClient, which makes per-call timeouts take effect, and the PSR-18 test doubles under PlinCode\\JobBoards\\Testing."
+    }
 }

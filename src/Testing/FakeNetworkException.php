@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PlinCode\JobBoards\Tests\Support;
+namespace PlinCode\JobBoards\Testing;
 
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
