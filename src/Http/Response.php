@@ -54,8 +54,8 @@ final class Response
 
     /**
      * The decoded JSON body, or one value out of it addressed with dot notation
-     * ("company.name"). Missing keys yield $default; a body that is not JSON at
-     * all is an error, not a miss.
+     * ("company.name"). Missing keys and an empty body yield $default; a body
+     * that is present but is not JSON at all is an error, not a miss.
      *
      * @throws InvalidResponseException
      */
@@ -114,8 +114,14 @@ final class Response
 
         $body = trim($this->body);
 
+        // A body with nothing in it is an absence, not a malformed document.
+        // Boards answering 204, or 200 with no content, decode to null so that
+        // json() can honour its $default instead of exploding. jsonArray()
+        // still rejects it, because null is not an array.
         if ($body === '') {
-            throw InvalidResponseException::emptyBody($this->url);
+            $this->isDecoded = true;
+
+            return $this->decoded = null;
         }
 
         try {

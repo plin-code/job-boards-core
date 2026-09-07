@@ -153,11 +153,11 @@ it('throws an invalid response exception on malformed json', function (): void {
     http($fake)->get('https://example.test/x')->json();
 })->throws(InvalidResponseException::class);
 
-it('throws an invalid response exception on an empty 200 body', function (): void {
+it('decodes an empty 200 body to null rather than throwing', function (): void {
     $fake = (new FakePsrClient)->respondWith(200, '');
 
-    http($fake)->get('https://example.test/x')->json();
-})->throws(InvalidResponseException::class, 'empty body');
+    expect(http($fake)->get('https://example.test/x')->json())->toBeNull();
+});
 
 it('leaves an empty body readable as a string', function (): void {
     $fake = (new FakePsrClient)->respondWith(200, '');
