@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/plin-code/job-boards-core/main/art/banner.png" alt="Job Boards Core">
+</p>
+
 # Job Boards Core
 
 Shared foundation for the `plin-code` job board connector packages.
