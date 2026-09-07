@@ -1,0 +1,131 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PlinCode\JobBoards\Http;
+
+use JsonException;
+use PlinCode\JobBoards\Exceptions\InvalidResponseException;
+
+/**
+ * A response that actually came back, whatever its status. Reading the body is
+ * separated from reading the status so a connector can decide for itself
+ * whether a 404 is a failure or an answer.
+ */
+final class Response
+{
+    private mixed $decoded = null;
+
+    private bool $isDecoded = false;
+
+    public function __construct(
+        private readonly string $url,
+        private readonly int $status,
+        private readonly string $body,
+    ) {}
+
+    public function url(): string
+    {
+        return $this->url;
+    }
+
+    public function status(): int
+    {
+        return $this->status;
+    }
+
+    public function successful(): bool
+    {
+        return $this->status >= 200 && $this->status < 300;
+    }
+
+    public function failed(): bool
+    {
+        return ! $this->successful();
+    }
+
+    /**
+     * The raw body, untouched. XML boards read this.
+     */
+    public function body(): string
+    {
+        return $this->body;
+    }
+
+    /**
+     * The decoded JSON body, or one value out of it addressed with dot notation
+     * ("company.name"). Missing keys yield $default; a body that is not JSON at
+     * all is an error, not a miss.
+     *
+     * @throws InvalidResponseException
+     */
+    public function json(?string $key = null, mixed $default = null): mixed
+    {
+        $decoded = $this->decode();
+
+        if ($key === null) {
+            return $decoded;
+        }
+
+        $value = $decoded;
+
+        foreach (explode('.', $key) as $segment) {
+            if (! is_array($value) || ! array_key_exists($segment, $value)) {
+                return $default;
+            }
+
+            $value = $value[$segment];
+        }
+
+        return $value;
+    }
+
+    /**
+     * Same as json(), but insists the value is an array so callers get a typed
+     * result instead of writing an is_array() guard around every access.
+     *
+     * @return array<array-key, mixed>
+     *
+     * @throws InvalidResponseException
+     */
+    public function jsonArray(?string $key = null): array
+    {
+        $value = $this->json($key);
+
+        if (! is_array($value)) {
+            throw InvalidResponseException::unexpectedShape(
+                $this->url,
+                $key ?? '<root>',
+                get_debug_type($value),
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * @throws InvalidResponseException
+     */
+    private function decode(): mixed
+    {
+        if ($this->isDecoded) {
+            return $this->decoded;
+        }
+
+        $body = trim($this->body);
+
+        if ($body === '') {
+            throw InvalidResponseException::emptyBody($this->url);
+        }
+
+        try {
+            $this->decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw InvalidResponseException::malformedJson($this->url, $e);
+        }
+
+        $this->isDecoded = true;
+
+        return $this->decoded;
+    }
+}
