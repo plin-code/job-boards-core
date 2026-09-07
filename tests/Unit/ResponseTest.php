@@ -64,13 +64,21 @@ it('throws on an html error page served with a 200', function (): void {
     response('<html><body>Oops</body></html>')->json();
 })->throws(InvalidResponseException::class);
 
-it('throws on an empty body', function (): void {
-    response('')->json();
-})->throws(InvalidResponseException::class, 'empty body');
+it('decodes an empty body to null rather than throwing', function (): void {
+    expect(response('')->json())->toBeNull();
+});
+
+it('honours the default on an empty body', function (): void {
+    expect(response('', 204)->json('anything', 'FALLBACK'))->toBe('FALLBACK');
+});
 
 it('treats a whitespace only body as empty', function (): void {
-    response("\n \t ")->json();
-})->throws(InvalidResponseException::class, 'empty body');
+    expect(response("\n \t ")->json())->toBeNull();
+});
+
+it('still rejects an empty body from jsonArray', function (): void {
+    response('')->jsonArray();
+})->throws(InvalidResponseException::class);
 
 it('returns a typed array from jsonArray', function (): void {
     expect(response('{"content":[1,2]}')->jsonArray('content'))->toBe([1, 2])
