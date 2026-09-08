@@ -81,6 +81,32 @@ final class Response
     }
 
     /**
+     * Like json(), but a body that is not JSON at all yields $default instead of
+     * throwing. A board serving an HTML maintenance page is a routine event, and
+     * a connector wants to log it as a warning rather than route it through a
+     * catch-all as an unexpected error.
+     */
+    public function tryJson(?string $key = null, mixed $default = null): mixed
+    {
+        try {
+            return $this->json($key, $default);
+        } catch (InvalidResponseException) {
+            return $default;
+        }
+    }
+
+    /**
+     * Read a nested value without an is_array() guard at every level. json()
+     * already walks dot notation, but callers analysing at PHPStan level 10 still
+     * have to prove the intermediate offsets exist, so every connector ends up
+     * writing the same private helper.
+     */
+    public function nested(string $key, mixed $default = null): mixed
+    {
+        return $this->tryJson($key, $default);
+    }
+
+    /**
      * Same as json(), but insists the value is an array so callers get a typed
      * result instead of writing an is_array() guard around every access.
      *

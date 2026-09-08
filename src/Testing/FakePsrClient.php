@@ -34,6 +34,9 @@ final class FakePsrClient implements ClientInterface, SupportsTimeout
 
     private bool $throwNetworkError = false;
 
+    /** @var list<array{match: string, response: ?ResponseInterface}> */
+    private array $matched = [];
+
     /**
      * @param  array<string, string|list<string>>  $headers
      */
@@ -59,6 +62,40 @@ final class FakePsrClient implements ClientInterface, SupportsTimeout
         return $this;
     }
 
+    /**
+     * Answer a request whose URI contains $match with this response, regardless of
+     * queue order. Connectors that hit more than one host (a region fallback, a
+     * separate careers page) otherwise have to build a FIFO queue and hope the
+     * order is what they think it is.
+     *
+     * @param  array<string, string|list<string>>  $headers
+     */
+    public function respondWhen(string $match, int $status, string $body = '', array $headers = []): self
+    {
+        $this->matched[] = ['match' => $match, 'response' => new PsrResponse($status, $headers, $body)];
+
+        return $this;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $payload
+     */
+    public function respondWhenJson(string $match, array $payload, int $status = 200): self
+    {
+        return $this->respondWhen($match, $status, json_encode($payload, JSON_THROW_ON_ERROR), ['Content-Type' => 'application/json']);
+    }
+
+    /**
+     * Fail only the requests whose URI contains $match. This is what makes
+     * "the first host is unreachable, the second answers" testable at all.
+     */
+    public function throwNetworkErrorWhen(string $match): self
+    {
+        $this->matched[] = ['match' => $match, 'response' => null];
+
+        return $this;
+    }
+
     public function withTimeout(float $seconds): ClientInterface
     {
         $this->appliedTimeouts[] = $seconds;
@@ -72,6 +109,20 @@ final class FakePsrClient implements ClientInterface, SupportsTimeout
 
         if ($this->throwNetworkError) {
             throw new FakeNetworkException($request);
+        }
+
+        $uri = (string) $request->getUri();
+
+        foreach ($this->matched as $rule) {
+            if (! str_contains($uri, $rule['match'])) {
+                continue;
+            }
+
+            if ($rule['response'] === null) {
+                throw new FakeNetworkException($request);
+            }
+
+            return $rule['response'];
         }
 
         $next = array_shift($this->queue);

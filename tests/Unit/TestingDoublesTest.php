@@ -29,3 +29,25 @@ it('makes guzzle honour a per-call timeout', function (): void {
         ->and($client->withTimeout(15.0))->not->toBe($client)
         ->and($client->withTimeout(15.0))->toBeInstanceOf(GuzzleTimeoutClient::class);
 });
+
+it('answers a specific host regardless of queue order', function (): void {
+    $fake = (new FakePsrClient)
+        ->respondWhenJson('jobs.eu.lever.co', ['eu' => true])
+        ->respondWhenJson('api.lever.co', ['us' => true]);
+
+    $http = $fake->asHttpClient();
+
+    expect($http->get('https://api.lever.co/v0/postings/x')->json('us'))->toBeTrue()
+        ->and($http->get('https://jobs.eu.lever.co/v0/postings/x')->json('eu'))->toBeTrue();
+});
+
+it('fails one host and answers on the other', function (): void {
+    $fake = (new FakePsrClient)
+        ->throwNetworkErrorWhen('api.lever.co')
+        ->respondWhenJson('jobs.eu.lever.co', ['region' => 'eu']);
+
+    $http = $fake->asHttpClient();
+
+    expect($http->tryGet('https://api.lever.co/v0/postings/x'))->toBeNull()
+        ->and($http->get('https://jobs.eu.lever.co/v0/postings/x')->json('region'))->toBe('eu');
+});

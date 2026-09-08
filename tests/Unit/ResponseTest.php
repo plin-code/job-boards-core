@@ -96,3 +96,20 @@ it('throws when jsonArray finds a scalar at the root', function (): void {
 it('exposes the url it was fetched from', function (): void {
     expect(response('{}')->url())->toBe('https://example.test/x');
 });
+
+it('does not throw from tryJson on a body that is not json', function (): void {
+    expect(response('<html>maintenance</html>')->tryJson())->toBeNull()
+        ->and(response('<html>maintenance</html>')->tryJson('a.b', 'FALLBACK'))->toBe('FALLBACK');
+});
+
+it('still decodes normally through tryJson', function (): void {
+    expect(response('{"company":{"name":"Laravel"}}')->tryJson('company.name'))->toBe('Laravel');
+});
+
+it('reads a nested value without an is_array guard', function (): void {
+    $r = response('{"content":[{"company":{"name":"ABOUT YOU"}}]}');
+
+    expect($r->nested('content.0.company.name'))->toBe('ABOUT YOU')
+        ->and($r->nested('content.0.company.missing', 'none'))->toBe('none')
+        ->and($r->nested('content.0.company.name.deeper', 'none'))->toBe('none');
+});
