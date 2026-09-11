@@ -4,6 +4,12 @@
 
 # Job Boards Core
 
+<p align="center">
+    <a href="https://packagist.org/packages/plin-code/job-boards-core"><img src="https://img.shields.io/packagist/v/plin-code/job-boards-core.svg?style=flat-square" alt="Packagist"></a>
+    <a href="https://packagist.org/packages/plin-code/job-boards-core"><img src="https://img.shields.io/packagist/php-v/plin-code/job-boards-core.svg?style=flat-square" alt="PHP from Packagist"></a>
+    <a href="https://packagist.org/packages/plin-code/job-boards-core"><img src="https://img.shields.io/packagist/dt/plin-code/job-boards-core.svg?style=flat-square" alt="Total Downloads"></a>
+</p>
+
 Shared foundation for the `plin-code` job board connector packages.
 
 It holds the four things every connector needs and nothing else:
