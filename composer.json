@@ -27,7 +27,7 @@
         "psr/log": "^2.0||^3.0"
     },
     "require-dev": {
-        "guzzlehttp/guzzle": "^7.8",
+        "guzzlehttp/guzzle": "^7.8||^8.0",
         "laravel/pint": "^1.14",
         "pestphp/pest": "^3.0||^4.0",
         "phpstan/phpstan": "^2.0"

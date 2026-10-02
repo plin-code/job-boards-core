@@ -4,3 +4,12 @@ parameters:
         - src
         - tests
     tmpDir: build/phpstan
+    ignoreErrors:
+        # Guzzle 8 types Client's $config as a detailed option shape, Guzzle 7
+        # as a plain array. The options here are a caller supplied pass-through that
+        # Guzzle validates at runtime, so the error only appears on 8.
+        -
+            identifier: argument.type
+            path: src/Http/GuzzleTimeoutClient.php
+            message: '#GuzzleHttp\\Client constructor#'
+            reportUnmatched: false
